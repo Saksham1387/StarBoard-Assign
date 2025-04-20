@@ -1,3 +1,5 @@
+import { useLeaseStore } from "@/store/leaseStore";
+
 export const leaseData = {
   tenant: {
     name: "Amazon",
@@ -95,6 +97,10 @@ export const leaseData = {
 
 // Generate rent schedule data for charts
 export const generateRentScheduleData = () => {
+  const { leaseData } = useLeaseStore();
+  if (!leaseData || !leaseData.rentSchedule) {
+    return [];
+  }
   return leaseData.rentSchedule.map((item) => ({
     year: item.year.toString(),
     "Rent PSF": item.rentPSF,
@@ -103,6 +109,10 @@ export const generateRentScheduleData = () => {
 
 // Generate market comparison data for charts
 export const generateMarketComparisonData = () => {
+  const { leaseData } = useLeaseStore();
+  if (!leaseData || !leaseData.marketComparison) {
+    return [];
+  }
   const data = [
     {
       name: leaseData.marketComparison.subjectProperty.name,
@@ -118,6 +128,10 @@ export const generateMarketComparisonData = () => {
 
 // Generate recovery breakdown data for charts
 export const generateRecoveryBreakdownData = () => {
+  const { leaseData } = useLeaseStore();
+  if (!leaseData || !leaseData.recoveryBreakdown) {
+    return [];
+  }
   return [
     { name: "CAM", value: leaseData.recoveryBreakdown.cam },
     { name: "Taxes", value: leaseData.recoveryBreakdown.taxes },
@@ -127,6 +141,10 @@ export const generateRecoveryBreakdownData = () => {
 
 // Generate lease timeline data
 export const generateLeaseTimelineData = () => {
+  const { leaseData } = useLeaseStore();
+  if (!leaseData || !leaseData.lease) {
+    return [];
+  }
   const startYear = new Date(leaseData.lease.startDate).getFullYear()
   const endYear = new Date(leaseData.lease.expiryDate).getFullYear()
 

@@ -1,5 +1,11 @@
-"use client"
-import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card"
+"use client";
+import {
+  Card,
+  CardContent,
+  CardDescription,
+  CardHeader,
+  CardTitle,
+} from "@/components/ui/card";
 
 import {
   Area,
@@ -16,30 +22,35 @@ import {
   Tooltip,
   XAxis,
   YAxis,
-} from "recharts"
+} from "recharts";
 import {
   generateRentScheduleData,
   generateMarketComparisonData,
   generateRecoveryBreakdownData,
   generateLeaseTimelineData,
-  leaseData,
-} from "./lease-data"
+} from "./lease-data";
 
-import { type ChartConfig, ChartContainer, ChartLegend, ChartTooltip, ChartTooltipContent } from "@/components/ui/chart"
+import {
+  type ChartConfig,
+  ChartContainer,
+  ChartLegend,
+} from "@/components/ui/chart";
+import { useLeaseStore } from "@/store/leaseStore";
 
-type RecoveryType = 'CAM' | 'Taxes' | 'Insurance';
+type RecoveryType = "CAM" | "Taxes" | "Insurance";
 
 const RECOVERY_COLORS: Record<RecoveryType, string> = {
   CAM: "#0088FE",
   Taxes: "#00C49F",
   Insurance: "#FFBB28",
-}
+};
 
 export default function LeaseCharts() {
-  const rentScheduleData = generateRentScheduleData()
-  const marketComparisonData = generateMarketComparisonData()
-  const recoveryBreakdownData = generateRecoveryBreakdownData()
-  const leaseTimelineData = generateLeaseTimelineData()
+  const rentScheduleData = generateRentScheduleData();
+  const marketComparisonData = generateMarketComparisonData();
+  const recoveryBreakdownData = generateRecoveryBreakdownData();
+  const leaseTimelineData = generateLeaseTimelineData();
+  const { leaseData } = useLeaseStore();
 
   const chartConfig = {
     desktop: {
@@ -50,7 +61,7 @@ export default function LeaseCharts() {
       label: "Mobile",
       color: "hsl(var(--chart-2))",
     },
-  } satisfies ChartConfig
+  } satisfies ChartConfig;
 
   return (
     <div className="space-y-6">
@@ -60,7 +71,8 @@ export default function LeaseCharts() {
           <CardHeader>
             <CardTitle>Rent Escalation</CardTitle>
             <CardDescription>
-              Annual rent PSF over lease term with {leaseData.escalations.rate} escalation
+              Annual rent PSF over lease term with{" "}
+              {leaseData?.escalations?.rate || "0"} escalation
             </CardDescription>
           </CardHeader>
           <CardContent className="pt-0">
@@ -78,12 +90,21 @@ export default function LeaseCharts() {
                   >
                     <CartesianGrid strokeDasharray="3 3" />
                     <XAxis dataKey="year" />
-                    <YAxis tickFormatter={(value) => `$${value}`} domain={[20, 40]} />
+                    <YAxis
+                      tickFormatter={(value) => `$${value}`}
+                      domain={[20, 40]}
+                    />
                     <Tooltip
                       formatter={(value) => [`$${value}`, "Rent PSF"]}
                       labelFormatter={(label) => `Year: ${label}`}
                     />
-                    <Line type="monotone" dataKey="Rent PSF" stroke="#8884d8" activeDot={{ r: 8 }} strokeWidth={2} />
+                    <Line
+                      type="monotone"
+                      dataKey="Rent PSF"
+                      stroke="#8884d8"
+                      activeDot={{ r: 8 }}
+                      strokeWidth={2}
+                    />
                   </LineChart>
                 </ResponsiveContainer>
               </ChartContainer>
@@ -95,7 +116,9 @@ export default function LeaseCharts() {
         <Card className="w-full">
           <CardHeader>
             <CardTitle>Market Rent Comparison</CardTitle>
-            <CardDescription>Comparing lease rate to market comps ($ PSF)</CardDescription>
+            <CardDescription>
+              Comparing lease rate to market comps ($ PSF)
+            </CardDescription>
           </CardHeader>
           <CardContent className="pt-0">
             <div className="h-[300px] sm:h-[400px]">
@@ -111,18 +134,28 @@ export default function LeaseCharts() {
                     }}
                   >
                     <CartesianGrid strokeDasharray="3 3" />
-                    <XAxis 
-                      dataKey="name" 
-                      angle={-45} 
-                      textAnchor="end" 
+                    <XAxis
+                      dataKey="name"
+                      angle={-45}
+                      textAnchor="end"
                       height={70}
                       interval={0}
                     />
-                    <YAxis tickFormatter={(value) => `$${value}`} domain={[0, 30]} />
+                    <YAxis
+                      tickFormatter={(value) => `$${value}`}
+                      domain={[0, 30]}
+                    />
                     <Tooltip formatter={(value) => [`$${value}`, "Rent PSF"]} />
                     <Bar dataKey="value" name="Rent PSF">
                       {marketComparisonData.map((entry, index) => (
-                        <Cell key={`cell-${index}`} fill={entry.name === "280 Richards" ? "#8884d8" : "#82ca9d"} />
+                        <Cell
+                          key={`cell-${index}`}
+                          fill={
+                            entry.name === "280 Richards"
+                              ? "#8884d8"
+                              : "#82ca9d"
+                          }
+                        />
                       ))}
                     </Bar>
                   </BarChart>
@@ -138,7 +171,9 @@ export default function LeaseCharts() {
         <Card className="w-full">
           <CardHeader>
             <CardTitle>Recovery Breakdown</CardTitle>
-            <CardDescription>Distribution of recovery costs by category</CardDescription>
+            <CardDescription>
+              Distribution of recovery costs by category
+            </CardDescription>
           </CardHeader>
           <CardContent className="pt-0">
             <div className="h-[300px] sm:h-[400px]">
@@ -150,15 +185,17 @@ export default function LeaseCharts() {
                       cx="50%"
                       cy="50%"
                       labelLine={false}
-                      label={({ name, percent }) => `${name}: ${(percent * 100).toFixed(0)}%`}
+                      label={({ name, percent }) =>
+                        `${name}: ${(percent * 100).toFixed(0)}%`
+                      }
                       outerRadius={80}
                       fill="#8884d8"
                       dataKey="value"
                     >
                       {recoveryBreakdownData.map((entry, index) => (
-                        <Cell 
-                          key={`cell-${index}`} 
-                          fill={RECOVERY_COLORS[entry.name as RecoveryType]} 
+                        <Cell
+                          key={`cell-${index}`}
+                          fill={RECOVERY_COLORS[entry.name as RecoveryType]}
                         />
                       ))}
                     </Pie>
@@ -175,7 +212,9 @@ export default function LeaseCharts() {
         <Card className="w-full">
           <CardHeader>
             <CardTitle>Lease Timeline</CardTitle>
-            <CardDescription>Key dates and events in the lease lifecycle</CardDescription>
+            <CardDescription>
+              Key dates and events in the lease lifecycle
+            </CardDescription>
           </CardHeader>
           <CardContent className="pt-0">
             <div className="h-[300px] sm:h-[400px]">
@@ -198,16 +237,26 @@ export default function LeaseCharts() {
                         if (active && payload && payload.length) {
                           return (
                             <div className="bg-white p-4 border rounded shadow-sm">
-                              <p className="font-bold">{payload[0].payload.event}</p>
+                              <p className="font-bold">
+                                {payload[0].payload.event}
+                              </p>
                               <p>{payload[0].payload.description}</p>
-                              <p className="text-sm text-gray-500">Year: {payload[0].payload.year}</p>
+                              <p className="text-sm text-gray-500">
+                                Year: {payload[0].payload.year}
+                              </p>
                             </div>
-                          )
+                          );
                         }
-                        return null
+                        return null;
                       }}
                     />
-                    <Area type="monotone" dataKey="year" stroke="#8884d8" fill="#8884d8" opacity={0.3} />
+                    <Area
+                      type="monotone"
+                      dataKey="year"
+                      stroke="#8884d8"
+                      fill="#8884d8"
+                      opacity={0.3}
+                    />
                   </AreaChart>
                 </ResponsiveContainer>
               </ChartContainer>
@@ -220,7 +269,9 @@ export default function LeaseCharts() {
       <Card className="w-full">
         <CardHeader>
           <CardTitle>Rent Schedule</CardTitle>
-          <CardDescription>Detailed annual rent schedule over the lease term</CardDescription>
+          <CardDescription>
+            Detailed annual rent schedule over the lease term
+          </CardDescription>
         </CardHeader>
         <CardContent>
           <div className="overflow-x-auto">
@@ -235,17 +286,32 @@ export default function LeaseCharts() {
                 </tr>
               </thead>
               <tbody>
-                {leaseData.rentSchedule.map((item, index) => (
-                  <tr key={index} className={index % 2 === 0 ? "bg-white" : "bg-gray-50"}>
+                {leaseData?.rentSchedule?.map((item, index) => (
+                  <tr
+                    key={index}
+                    className={index % 2 === 0 ? "bg-white" : "bg-gray-50"}
+                  >
                     <td className="border px-4 py-2">{item.year}</td>
-                    <td className="border px-4 py-2">${item.rentPSF.toFixed(2)}</td>
-                    <td className="border px-4 py-2">${item.annualRent.toLocaleString()}</td>
                     <td className="border px-4 py-2">
-                      ${(item.annualRent / 12).toLocaleString(undefined, { maximumFractionDigits: 0 })}
+                      ${item.rentPSF.toFixed(2)}
                     </td>
                     <td className="border px-4 py-2">
-                      {index > 0
-                        ? `${((item.rentPSF / leaseData.rentSchedule[index - 1].rentPSF - 1) * 100).toFixed(1)}%`
+                      ${item.annualRent.toLocaleString()}
+                    </td>
+                    <td className="border px-4 py-2">
+                      $
+                      {(item.annualRent / 12).toLocaleString(undefined, {
+                        maximumFractionDigits: 0,
+                      })}
+                    </td>
+                    <td className="border px-4 py-2">
+                      {index > 0 && leaseData?.rentSchedule?.[index - 1]
+                        ? `${(
+                            (item.rentPSF /
+                              leaseData.rentSchedule[index - 1].rentPSF -
+                              1) *
+                            100
+                          ).toFixed(1)}%`
                         : "-"}
                     </td>
                   </tr>
@@ -256,5 +322,5 @@ export default function LeaseCharts() {
         </CardContent>
       </Card>
     </div>
-  )
+  );
 }

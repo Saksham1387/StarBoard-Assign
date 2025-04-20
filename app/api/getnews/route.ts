@@ -20,9 +20,12 @@ interface IResponse {
   news_results: TNews[];
 }
 
-export const GET = async (req: NextRequest) => {
+export const POST = async (req: NextRequest) => {
   const cache = InMemoryCache.getInstance();
-  const cachedResponse = await cache.get("google_news", ["amazon"]);
+
+  const body = await req.json();
+
+  const cachedResponse = await cache.get("google_news", [body.query]);
 
   if (cachedResponse) {
     console.log("cached response");
@@ -30,12 +33,17 @@ export const GET = async (req: NextRequest) => {
   }
   const response = await getJson({
     engine: "google_news",
-    q: "amazon",
+    q: body.query,
     gl: "us",
     hl: "en",
     api_key: process.env.SERP_API,
   });
-  await cache.set("google_news", ["amazon"], response.news_results.slice(0, 30), 60);
+  await cache.set(
+    "google_news",
+    [body.query],
+    response.news_results.slice(0, 30),
+    60
+  );
   const articles: IResponse = response.news_results.slice(0, 30);
 
   return NextResponse.json(articles);

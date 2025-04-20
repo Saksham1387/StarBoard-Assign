@@ -17,15 +17,16 @@ import {
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { Skeleton } from "@/components/ui/skeleton";
-import { leaseData } from "./lease-data";
 import { TNews } from "../api/getnews/route";
 import { useEffect, useState } from "react";
 import { formatDate } from "@/lib/helper";
 import Image from "next/image";
+import { useLeaseStore } from "@/store/leaseStore";
 
 export default function LeaseNews() {
   const newsPerPage = 5;
-  const { tenant } = leaseData;
+  const { leaseData, setLeaseData, isDataLoaded } = useLeaseStore();
+  const tenant = leaseData.tenant!;
   const [news, setNews] = useState<TNews[]>([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
@@ -38,7 +39,10 @@ export default function LeaseNews() {
     try {
       setLoading(true);
       setError(null);
-      const response = await fetch("/api/getnews");
+      const response = await fetch("/api/getnews",{
+        method: "POST",
+        body: JSON.stringify({ query: tenant.name }),
+      });
       if (!response.ok) {
         throw new Error("Failed to fetch news");
       }

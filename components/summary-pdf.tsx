@@ -1,10 +1,15 @@
 import React from "react";
-import { Document, Page, Text, View, StyleSheet,Image } from "@react-pdf/renderer";
-
+import {
+  Document,
+  Page,
+  Text,
+  View,
+  StyleSheet,
+  Image,
+} from "@react-pdf/renderer";
 import { formatDate } from "@/lib/helper";
-import { leaseData } from "@/app/lease/lease-data";
+import { useLeaseStore } from "@/store/leaseStore";
 
-// Styles
 const styles = StyleSheet.create({
   page: {
     padding: 30,
@@ -46,6 +51,20 @@ const styles = StyleSheet.create({
 });
 
 const MyDoc = () => {
+  const { leaseData } = useLeaseStore();
+  if (
+    !leaseData ||
+    !leaseData.lease ||
+    !leaseData.tenant ||
+    !leaseData.rent ||
+    !leaseData.escalations ||
+    !leaseData.recoveries ||
+    !leaseData.security ||
+    !leaseData.renewalOptions
+  ) {
+    return null;
+  }
+
   const startDate = new Date(leaseData.lease.startDate).getTime();
   const endDate = new Date(leaseData.lease.expiryDate).getTime();
   const today = new Date().getTime();
@@ -67,7 +86,9 @@ const MyDoc = () => {
           <Text style={styles.title}>Key Lease Metrics</Text>
           <View style={styles.row}>
             <Text style={styles.label}>Tenant:</Text>
-            <Text>{leaseData.tenant.name} ({leaseData.tenant.creditRating})</Text>
+            <Text>
+              {leaseData.tenant.name} ({leaseData.tenant.creditRating})
+            </Text>
           </View>
           <View style={styles.row}>
             <Text style={styles.label}>Lease Term:</Text>
@@ -78,7 +99,8 @@ const MyDoc = () => {
           <View style={styles.row}>
             <Text style={styles.label}>Base Rent PSF:</Text>
             <Text>
-              {leaseData.rent.baseRentPSF} (Escalation: {leaseData.escalations.rate})
+              {leaseData.rent.baseRentPSF} (Escalation:{" "}
+              {leaseData.escalations.rate})
             </Text>
           </View>
           <View style={styles.row}>
@@ -124,9 +146,17 @@ const MyDoc = () => {
         {/* Rent Structure */}
         <View style={styles.section}>
           <Text style={styles.title}>Rent Structure</Text>
-          {["baseRentPSF", "annualBaseRent", "monthlyBaseRent", "effectiveRentPSF"].map((key) => (
+          {[
+            "baseRentPSF",
+            "annualBaseRent",
+            "monthlyBaseRent",
+            "effectiveRentPSF",
+          ].map((key) => (
             <View key={key} style={styles.row}>
-              <Text style={styles.label}>{key.replace(/([A-Z])/g, " $1")}:</Text>
+              <Text style={styles.label}>
+                {key.replace(/([A-Z])/g, " $1")}:
+              </Text>
+              {/* @ts-ignore */}
               <Text>{leaseData.rent[key]}</Text>
             </View>
           ))}
@@ -154,7 +184,10 @@ const MyDoc = () => {
           <Text style={styles.title}>Recovery Terms</Text>
           {["operatingExpenses", "cam", "insurance", "taxes"].map((key) => (
             <View key={key} style={styles.row}>
-              <Text style={styles.label}>{key.replace(/([A-Z])/g, " $1")}:</Text>
+              <Text style={styles.label}>
+                {key.replace(/([A-Z])/g, " $1")}:
+              </Text>
+              {/* @ts-ignore */}
               <Text>{leaseData.recoveries[key]}</Text>
             </View>
           ))}
@@ -168,7 +201,9 @@ const MyDoc = () => {
               <Text style={{ marginBottom: 2 }}>Option {index + 1}</Text>
               <Text style={styles.label}>Term: {option.term}</Text>
               <Text style={styles.label}>Notice Period: {option.notice}</Text>
-              <Text style={styles.label}>Rent Structure: {option.rentStructure}</Text>
+              <Text style={styles.label}>
+                Rent Structure: {option.rentStructure}
+              </Text>
               <View style={styles.divider} />
             </View>
           ))}

@@ -9,12 +9,30 @@ import LeaseNews from "./lease-news";
 import { PDFDownloadLink } from "@react-pdf/renderer";
 import MyDoc from "@/components/summary-pdf";
 import { useEffect, useState } from "react";
+import { useLeaseStore } from "@/store/leaseStore";
+import { useRouter } from "next/navigation";
 
 export default function LeasePage() {
   const [isClient, setIsClient] = useState(false);
+  const { leaseData } = useLeaseStore();
+  const router = useRouter();
+
   useEffect(() => {
     setIsClient(true);
-  }, []);
+    if (
+      !leaseData ||
+      !leaseData.tenant ||
+      Object.keys(leaseData).length === 0
+    ) {
+      //  If No data found then redirect to deal-overview page for uploading data
+      router.push("/deal-overview");
+    }
+  }, [leaseData, router]);
+
+  if (!isClient || !leaseData || !leaseData.tenant) {
+    return null;
+  }
+
   return (
     <div className="min-h-screen bg-white">
       <main className="container mx-auto px-4 py-6">
@@ -37,10 +55,13 @@ export default function LeasePage() {
             </div>
             <div>
               <h2 className="text-xl font-semibold">
-                280 Richards, Brooklyn, NY
+                {leaseData.marketComparison?.subjectProperty.name ||
+                  "Property Name"}
               </h2>
               <p className="text-sm text-gray-500">Date Updated: 10/05/2024</p>
-              <p className="text-sm text-gray-500">Warehouse</p>
+              <p className="text-sm text-gray-500">
+                {leaseData.tenant?.industry || "Industry"}
+              </p>
             </div>
           </div>
 

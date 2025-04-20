@@ -1,29 +1,116 @@
-import Link from "next/link";
+"use client";
+import { FileUpload } from "@/components/ui/file-upload";
+import { Progress } from "@/components/ui/progress";
+import { useLeaseStore } from "@/store/leaseStore";
+import axios from "axios";
+import { useState, useEffect } from "react";
+import DealOverview from "./overview";
+import { useDealOverviewStore } from "@/store/dealStrore";
+import { Button } from "@/components/ui/button";
+import { useRouter } from "next/navigation";
 
 export default function DealOverviewPage() {
+  const [files, setFiles] = useState<File[]>();
+  const [sending, setSending] = useState(false);
+  const [progress, setProgress] = useState(0);
+  const { setLeaseData } = useLeaseStore();
+  const { setDealData, dealData, isDataLoaded } = useDealOverviewStore();
+  const [showUploader, setShowUploader] = useState(false);
+  const router = useRouter();
+
+  
+  useEffect(() => {
+    const hasNoData = !isDataLoaded || !dealData.dealOverview?.propertyName;
+    setShowUploader(hasNoData);
+  }, [dealData, isDataLoaded]);
+
+  useEffect(() => {
+    let intervalId: NodeJS.Timeout;
+
+    if (sending) {
+      setProgress(0);
+
+      intervalId = setInterval(() => {
+        setProgress((prevProgress) => {
+          const increment = Math.max(0.5, 5 * (1 - prevProgress / 95));
+          const newProgress = Math.min(95, prevProgress + increment);
+          return newProgress;
+        });
+      }, 300);
+    }
+
+    return () => {
+      if (intervalId) clearInterval(intervalId);
+
+      if (!sending) setProgress(100);
+    };
+  }, [sending]);
+
+  const handleFileUpload = async (files: File[]) => {
+    setSending(true);
+    setFiles(files);
+
+    const form = new FormData();
+    form.append("pdf", files[0]);
+
+    try {
+      const res = await axios.get("/api/parse-pdf-openai");
+      console.log("Response:", res.data);
+
+      setProgress(100);
+      setTimeout(() => {
+        setSending(false);
+      }, 500);
+
+      setLeaseData(res.data.data.tenantData);
+      setDealData(res.data.data.dealData);
+      router.push("/lease");
+      setSending(false);
+    } catch (error) {
+      console.error("Error uploading file:", error);
+      setSending(false);
+    }
+  };
+
   return (
     <div className="min-h-screen bg-white">
-      <main className="container mx-auto px-4 py-6">
-        <div className="flex justify-between items-start mb-6">
-          <div>
-            <h1 className="text-2xl font-bold">Deal Overview</h1>
-          </div>
-          <div className="text-right">
-            <div className="text-sm text-gray-600 mb-1">Underwriting Model</div>
-            <div className="text-sm font-medium">
-              Industrial Template v2.4.xlsx
+      <div className="container mx-auto px-4 sm:px-6 lg:px-8 py-6">
+        {sending ? (
+          <div className="max-w-2xl mx-auto space-y-4">
+            <div className="space-y-2 pt-32">
+              <Progress value={progress} className="h-2 " />
+              <div className="flex justify-between items-center">
+                <p className="text-sm text-gray-500">Processing PDF...</p>
+                <p className="text-xs text-gray-500">*This may take a while, depends on the LLM response</p>
+                <p className="text-sm font-medium text-gray-700">
+                  {Math.round(progress)}%
+                </p>
+              </div>
             </div>
           </div>
-        </div>
-
-        <div className=" p-8 rounded-lg text-center">
-          <h2 className="text-xl font-semibold mb-4">Deal Overview Content</h2>
-
-          <Link href="/lease" className="hover:underline">
-            Go to Lease Abstract
-          </Link>
-        </div>
-      </main>
+        ) : showUploader ? (
+          <div className="max-w-2xl mx-auto">
+            <FileUpload onChange={handleFileUpload} />
+          </div>
+        ) : (
+          <div className="space-y-6">
+            <div className="flex items-end justify-end flex-col">
+              <Button
+                onClick={() => {
+                  setShowUploader(true);
+                }}
+                className="w-full sm:w-auto bg-black text-white hover:bg-black/80 hover:text-white"
+              >
+                Upload New PDF
+              </Button>
+              <p className="text-xs text-gray-500 pt-2">
+                * This is just for demo
+              </p>
+            </div>
+            <DealOverview />
+          </div>
+        )}
+      </div>
     </div>
   );
 }
