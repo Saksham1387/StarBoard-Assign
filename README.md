@@ -3,6 +3,10 @@
 
 This is a normal Next.js application using **ShadCN** and **Tailwind CSS** for styling.
 
+## Demo Video
+
+https://www.loom.com/share/a753a037423e41a4b61948ef3dfbb9b3
+
 ## 🚀 Setup Instructions
 
 1. **Clone the repository**

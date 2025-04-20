@@ -7,6 +7,8 @@ import {
 } from "@/lib/helper";
 import { prompt } from "@/lib/prompt";
 
+// This is the API key for the Gemini model
+// But it does not support the Signed URL feature, to use this one you have to send the PDF in form Data
 const genAI = new GoogleGenerativeAI(process.env.GEMINI_API_KEY || "");
 
 const parsePDFWithGemini = async (buffer: Buffer): Promise<LeaseData> => {

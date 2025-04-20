@@ -23,6 +23,7 @@ function isCacheValid(timestamp: number): boolean {
   return Date.now() - timestamp < CACHE_TTL;
 }
 
+// This is the API key for the OpenAI model
 export async function POST(request: Request) {
   try {
     const body = await request.json();
