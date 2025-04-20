@@ -54,7 +54,7 @@ export default function DealOverviewPage() {
     form.append("pdf", files[0]);
 
     try {
-      const res = await axios.get("/api/parse-pdf-openai");
+      const res = await axios.post("/api/parse-pdf-openai",form);
       console.log("Response:", res.data);
 
       setProgress(100);
