@@ -18,7 +18,6 @@ export default function DealOverviewPage() {
   const [showUploader, setShowUploader] = useState(false);
   const router = useRouter();
 
-  
   useEffect(() => {
     const hasNoData = !isDataLoaded || !dealData.dealOverview?.propertyName;
     setShowUploader(hasNoData);
@@ -47,14 +46,38 @@ export default function DealOverviewPage() {
   }, [sending]);
 
   const handleFileUpload = async (files: File[]) => {
+    if (!files || files.length === 0) return;
+
     setSending(true);
     setFiles(files);
 
-    const form = new FormData();
-    form.append("pdf", files[0]);
-
     try {
-      const res = await axios.post("/api/parse-pdf-openai",form);
+      const file = files[0];
+      const filename = encodeURIComponent(file.name);
+      const fileType = encodeURIComponent(file.type);
+
+      const { data: s3Data } = await axios.get(
+        `/api/get-upload-url?filename=${filename}&fileType=${fileType}`
+      );
+
+      await axios.put(s3Data.uploadUrl, file, {
+        headers: {
+          "Content-Type": file.type,
+        },
+        onUploadProgress: (progressEvent) => {
+          if (progressEvent.total) {
+            const percentCompleted = Math.round(
+              (progressEvent.loaded * 40) / progressEvent.total
+            );
+            setProgress(percentCompleted);
+          }
+        },
+      });
+
+      const res = await axios.post("/api/parse-pdf-openai", {
+        pdfUrl: s3Data.fileUrl,
+      });
+
       console.log("Response:", res.data);
 
       setProgress(100);
@@ -65,7 +88,6 @@ export default function DealOverviewPage() {
       setLeaseData(res.data.data.tenantData);
       setDealData(res.data.data.dealData);
       router.push("/lease");
-      setSending(false);
     } catch (error) {
       console.error("Error uploading file:", error);
       setSending(false);
@@ -78,10 +100,14 @@ export default function DealOverviewPage() {
         {sending ? (
           <div className="max-w-2xl mx-auto space-y-4">
             <div className="space-y-2 pt-32">
-              <Progress value={progress} className="h-2 " />
+              <Progress value={progress} className="h-2" />
               <div className="flex justify-between items-center">
-                <p className="text-sm text-gray-500">Processing PDF...</p>
-                <p className="text-xs text-gray-500">*This may take a while, depends on the LLM response</p>
+                <p className="text-sm text-gray-500">
+                  {progress < 40 ? "Uploading to S3..." : "Processing PDF..."}
+                </p>
+                <p className="text-xs text-gray-500">
+                  *This may take a while, depends on the LLM response
+                </p>
                 <p className="text-sm font-medium text-gray-700">
                   {Math.round(progress)}%
                 </p>

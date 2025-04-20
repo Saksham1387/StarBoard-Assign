@@ -7,7 +7,7 @@ This is a normal Next.js application using **ShadCN** and **Tailwind CSS** for s
 
 1. **Clone the repository**
    ```bash
-   git clone <your-repo-url>
+   git clone https://github.com/Saksham1387/StarBoard-Assign.git
    ```
 
 2. **Navigate into the project directory**
@@ -25,6 +25,10 @@ This is a normal Next.js application using **ShadCN** and **Tailwind CSS** for s
    SERP_API=<your-serp-api-key>
    GEMINI_API_KEY=<your-gemini-api-key>
    OPENAI_API_KEY=<your-openai-api-key>
+   AWS_ACCESS_KEY_ID=<your-AWS_ACCESS_KEY_ID>
+   AWS_SECRET_ACCESS_KEY=<your-AWS_SECRET_ACCESS_KEY>
+   AWS_REGION=<your-AWS_REGION>
+   AWS_S3_BUCKET_NAME=<your-AWS_S3_BUCKET_NAME>
    ```
 
 5. **Run the development server**
