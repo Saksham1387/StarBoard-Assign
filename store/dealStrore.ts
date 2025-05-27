@@ -1,3 +1,4 @@
+import { Source } from "@/app/deal-overview/overview";
 import { create } from "zustand";
 import { persist } from "zustand/middleware";
 
@@ -17,6 +18,7 @@ export type DealOverviewType = {
     underwritingModel: string;
   };
   dealSummary?: {
+    source?: Source
     text: string;
   };
   personalizedInsights?: string[];

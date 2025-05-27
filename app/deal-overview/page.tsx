@@ -74,7 +74,7 @@ export default function DealOverviewPage() {
         },
       });
 
-      const res = await axios.post("/api/parse-pdf-openai", {
+      const res = await axios.post("/api/parse-pdf-gemini", {
         pdfUrl: s3Data.fileUrl,
       });
 
@@ -86,7 +86,7 @@ export default function DealOverviewPage() {
       }, 500);
 
       setLeaseData(res.data.data.tenantData);
-      setDealData(res.data.data.dealData);
+      setDealData(res.data.data.leaseData);
       router.push("/lease");
     } catch (error) {
       console.error("Error uploading file:", error);
