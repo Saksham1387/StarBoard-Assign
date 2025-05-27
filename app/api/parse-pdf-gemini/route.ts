@@ -10,7 +10,7 @@ import * as path from 'path';
 import * as os from 'os';
 import fetch from 'node-fetch';
 
-const genAI = new GoogleGenerativeAI("AIzaSyClmTC3fgHlVU5pIdTltdio7A3Z5qCk0zk");
+const genAI = new GoogleGenerativeAI("");
 
 // In-memory cache to store parsed PDF results
 const pdfCache = new Map<string, { leaseData: any; tenantData: any; timestamp: number }>();
