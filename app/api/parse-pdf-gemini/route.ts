@@ -1,9 +1,5 @@
 import { NextRequest, NextResponse } from "next/server";
 import { GoogleGenerativeAI } from "@google/generative-ai";
-import { LeaseData } from "@/types/leaseData";
-import {
-  calculateRemainingTerm
-} from "@/lib/helper";
 import { prompt } from "@/lib/prompt";
 import * as fs from 'fs';
 import * as path from 'path';

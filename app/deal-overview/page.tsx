@@ -3,20 +3,26 @@ import { FileUpload } from "@/components/ui/file-upload";
 import { Progress } from "@/components/ui/progress";
 import { useLeaseStore } from "@/store/leaseStore";
 import axios from "axios";
-import { useState, useEffect } from "react";
+import { useState, useEffect, useRef } from "react";
 import DealOverview from "./overview";
 import { useDealOverviewStore } from "@/store/dealStrore";
 import { Button } from "@/components/ui/button";
 import { useRouter } from "next/navigation";
 
 export default function DealOverviewPage() {
-  const [files, setFiles] = useState<File[]>();
+  const [files, setFiles] = useState<File[]>([]);
   const [sending, setSending] = useState(false);
   const [progress, setProgress] = useState(0);
+  const [projectId, setProjectId] = useState<string | null>(null);
   const { setLeaseData } = useLeaseStore();
   const { setDealData, dealData, isDataLoaded } = useDealOverviewStore();
   const [showUploader, setShowUploader] = useState(false);
   const router = useRouter();
+  
+  // Use ref to track polling status
+  const pollingRef = useRef<{ isActive: boolean; timeoutId?: NodeJS.Timeout }>({ 
+    isActive: false 
+  });
 
   useEffect(() => {
     const hasNoData = !isDataLoaded || !dealData.dealOverview?.propertyName;
@@ -40,57 +46,144 @@ export default function DealOverviewPage() {
 
     return () => {
       if (intervalId) clearInterval(intervalId);
-
       if (!sending) setProgress(100);
     };
   }, [sending]);
 
+  // Cleanup polling on unmount
+  useEffect(() => {
+    return () => {
+      if (pollingRef.current.timeoutId) {
+        clearTimeout(pollingRef.current.timeoutId);
+      }
+      pollingRef.current.isActive = false;
+    };
+  }, []);
+
+  const uploadFileToS3 = async (file: File) => {
+    const filename = encodeURIComponent(file.name);
+    const fileType = encodeURIComponent(file.type);
+
+    const { data: s3Data } = await axios.get(
+      `/api/get-upload-url?filename=${filename}&fileType=${fileType}`
+    );
+
+    await axios.put(s3Data.uploadUrl, file, {
+      headers: {
+        "Content-Type": file.type,
+      },
+    });
+
+    return s3Data.fileUrl;
+  };
+
+  const pollForResults = async (projectId: string): Promise<boolean> => {
+    try {
+      const statusResponse = await axios.get(`http://localhost:8000/status/${projectId}`);
+
+      if (statusResponse.data.status === "completed") {
+        // Make a single request to get the summary
+        const summaryResponse = await axios.post("http://localhost:8000/summary", {
+          user_id: "user123",
+          project_id: projectId,
+        });
+
+        setLeaseData(summaryResponse.data.summary.tenantDetails);
+        const data = {
+          ...summaryResponse.data.summary,
+          projectId: projectId,
+        }
+        setDealData(data);
+        
+        // Stop polling and navigate
+        pollingRef.current.isActive = false;
+        setProgress(100);
+        setSending(false);
+        
+        // Navigate after a short delay to ensure state updates
+        setTimeout(() => {
+          router.push("/lease");
+        }, 100);
+        
+        return true;
+      }
+      return false;
+    } catch (error) {
+      console.error("Error polling for results:", error);
+      return false;
+    }
+  };
+
+  const startPolling = (projectId: string) => {
+    // Stop any existing polling
+    if (pollingRef.current.timeoutId) {
+      clearTimeout(pollingRef.current.timeoutId);
+    }
+    
+    pollingRef.current.isActive = true;
+    
+    const poll = async () => {
+      if (!pollingRef.current.isActive) return;
+      
+      try {
+        const isComplete = await pollForResults(projectId);
+        
+        if (!isComplete && pollingRef.current.isActive) {
+          // Schedule next poll
+          pollingRef.current.timeoutId = setTimeout(poll, 5000);
+        }
+      } catch (error) {
+        console.error("Error polling for results:", error);
+        if (pollingRef.current.isActive) {
+          // Retry on error
+          pollingRef.current.timeoutId = setTimeout(poll, 5000);
+        }
+      }
+    };
+
+    // Start first poll
+    poll();
+  };
+
   const handleFileUpload = async (files: File[]) => {
     if (!files || files.length === 0) return;
 
+    // Stop any existing polling
+    pollingRef.current.isActive = false;
+    if (pollingRef.current.timeoutId) {
+      clearTimeout(pollingRef.current.timeoutId);
+    }
+
     setSending(true);
     setFiles(files);
+    setProgress(0);
 
     try {
-      const file = files[0];
-      const filename = encodeURIComponent(file.name);
-      const fileType = encodeURIComponent(file.type);
-
-      const { data: s3Data } = await axios.get(
-        `/api/get-upload-url?filename=${filename}&fileType=${fileType}`
+      // Upload all files to S3
+      const fileUrls = await Promise.all(
+        files.map(async (file, index) => {
+          const url = await uploadFileToS3(file);
+          setProgress((index + 1) * (40 / files.length));
+          return url;
+        })
       );
 
-      await axios.put(s3Data.uploadUrl, file, {
-        headers: {
-          "Content-Type": file.type,
-        },
-        onUploadProgress: (progressEvent) => {
-          if (progressEvent.total) {
-            const percentCompleted = Math.round(
-              (progressEvent.loaded * 40) / progressEvent.total
-            );
-            setProgress(percentCompleted);
-          }
-        },
+      // Send to processing endpoint
+      const processResponse = await axios.post("http://localhost:8000/process", {
+        user_id: "user123",
+        file_urls: fileUrls,
       });
 
-      const res = await axios.post("/api/parse-pdf-gemini", {
-        pdfUrl: s3Data.fileUrl,
-      });
+      setProjectId(processResponse.data.project_id);
+      setProgress(50);
 
-      console.log("Response:", res.data);
+      // Start polling
+      startPolling(processResponse.data.project_id);
 
-      setProgress(100);
-      setTimeout(() => {
-        setSending(false);
-      }, 500);
-
-      setLeaseData(res.data.data.tenantData);
-      setDealData(res.data.data.leaseData);
-      router.push("/lease");
     } catch (error) {
-      console.error("Error uploading file:", error);
+      console.error("Error processing files:", error);
       setSending(false);
+      pollingRef.current.isActive = false;
     }
   };
 
@@ -103,10 +196,14 @@ export default function DealOverviewPage() {
               <Progress value={progress} className="h-2" />
               <div className="flex justify-between items-center">
                 <p className="text-sm text-gray-500">
-                  {progress < 40 ? "Uploading to S3..." : "Processing PDF..."}
+                  {progress < 40 
+                    ? `Uploading ${files.length} files to S3...` 
+                    : progress < 50 
+                    ? "Starting processing..." 
+                    : "Processing files..."}
                 </p>
                 <p className="text-xs text-gray-500">
-                  *This may take a while, depends on the LLM response
+                  *This may take a while, depends on the processing time
                 </p>
                 <p className="text-sm font-medium text-gray-700">
                   {Math.round(progress)}%

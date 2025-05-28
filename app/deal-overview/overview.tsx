@@ -8,6 +8,7 @@ import { DealSummary } from "./components/DealSummary";
 import { PersonalizedInsights } from "./components/PersonalizedInsights";
 import { AnalyticsSection } from "./components/AnalyticsSection";
 import { AssetLevelData } from "./components/AssetLevelData";
+import { ChatBot } from "./components/ChatBot";
 
 export interface Source {
   page_no: number;
@@ -48,6 +49,10 @@ interface AssetLevelData {
   occupancyRate?: string;
 }
 
+
+interface Props {
+  projectId: string;
+}
 export default function DealOverview() {
   const { dealData, isDataLoaded } = useDealOverviewStore();
   const [pdfModalOpen, setPdfModalOpen] = useState(false);
@@ -55,7 +60,8 @@ export default function DealOverview() {
   const [currentPdfTitle, setCurrentPdfTitle] = useState("");
   const [currentStartPosition, setCurrentStartPosition] = useState<number>();
   const [currentEndPosition, setCurrentEndPosition] = useState<number>();
-  
+
+  console.log("Project ID:", dealData.projectId);
   const pdfUrl = "https://assignment-starbaord.s3.ap-south-1.amazonaws.com/uploads/ab85ea96-1cf3-4caa-bf8c-829fbac7b083-280%20Richards%20-%20OM.pdf";
 
   console.log("Deal Data:", dealData);
@@ -141,6 +147,9 @@ export default function DealOverview() {
           )}
         </div>
       </div>
+
+      {/* ChatBot */}
+      <ChatBot projectId={dealData.projectId!} />
     </div>
   );
 }

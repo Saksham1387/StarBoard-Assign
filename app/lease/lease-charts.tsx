@@ -293,7 +293,7 @@ export default function LeaseCharts() {
                   >
                     <td className="border px-4 py-2">{item.year}</td>
                     <td className="border px-4 py-2">
-                      ${item.rentPSF.toFixed(2)}
+                      ${item.rentPSF}
                     </td>
                     <td className="border px-4 py-2">
                       ${item.annualRent.toLocaleString()}

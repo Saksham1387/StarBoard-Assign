@@ -3,6 +3,7 @@ import { create } from "zustand";
 import { persist } from "zustand/middleware";
 
 export type DealOverviewType = {
+  projectId?: string;
   dealOverview?: {
     propertyName: string;
     location: string;
