@@ -360,7 +360,7 @@ export default function DealOverviewPage() {
         );
 
         // Send to processing endpoint
-        const processResponse = await axios.post("http://localhost:8000/process", {
+        const processResponse = await axios.post("http://43.205.239.14:8000/process", {
           user_id: "user123",
           file_urls: fileUrls,
         });
