@@ -20,12 +20,12 @@ export function PersonalizedInsights({ insights }: PersonalizedInsightsProps) {
       <h3 className="text-lg font-medium mb-3">
         Personalized Insights
       </h3>
-      <ul className="list-disc pl-5 text-sm space-y-2">
-        {insights.map(
+      {/* <ul className="list-disc pl-5 text-sm space-y-2">
+        {insights?.map(
           (insight, index) =>
             isValidValue(insight) && <li key={index}>{insight}</li>
         )}
-      </ul>
+      </ul> */}
     </div>
   );
 } 

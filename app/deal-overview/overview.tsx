@@ -62,7 +62,7 @@ export default function DealOverview() {
   const [currentEndPosition, setCurrentEndPosition] = useState<number>();
 
   console.log("Project ID:", dealData.projectId);
-  const pdfUrl = "https://assignment-starbaord.s3.ap-south-1.amazonaws.com/uploads/ab85ea96-1cf3-4caa-bf8c-829fbac7b083-280%20Richards%20-%20OM.pdf";
+  const pdfUrl = "https://assignment-starbaord.s3.ap-south-1.amazonaws.com/uploads/135a3bf8-edd1-4941-bdd9-58ff3bd27e13-280+Richards+-+OM.pdf";
 
   console.log("Deal Data:", dealData);
   if (!isDataLoaded || !dealData) {

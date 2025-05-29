@@ -1,6 +1,7 @@
 import { useState } from 'react';
 import { MessageCircle, Send, X, Bot, User } from 'lucide-react';
-
+import Markdown from 'react-markdown'
+import remarkGfm from 'remark-gfm'
 interface ChatBotProps {
   projectId: string;
 }
@@ -56,7 +57,7 @@ export const ChatBot = ({ projectId }: ChatBotProps) => {
     <div className="fixed bottom-6 right-6 z-50">
       {/* Chat Window */}
       {isOpen && (
-        <div className="absolute bottom-16 right-0 bg-white rounded-2xl shadow-2xl w-80 h-[500px] flex flex-col border overflow-hidden">
+        <div className="absolute bottom-16 right-0 bg-white rounded-2xl shadow-2xl w-[500px] h-[500px] flex flex-col border overflow-hidden">
           {/* Header */}
           <div className="bg-black p-4 flex justify-between items-center text-white ">
             <div className="flex items-center space-x-3">
@@ -97,7 +98,10 @@ export const ChatBot = ({ projectId }: ChatBotProps) => {
                       : 'bg-white text-black  rounded-bl-md'
                   }`}
                 >
-                  <p className="text-sm leading-relaxed">{message.text}</p>
+                  <p className="text-sm leading-relaxed">
+                  <Markdown remarkPlugins={[remarkGfm]}>{message.text}</Markdown>
+                  </p>
+                  
                 </div>
               </div>
             ))}
