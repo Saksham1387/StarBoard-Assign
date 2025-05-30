@@ -5,19 +5,21 @@ interface Source {
   page_no: number;
   start_position: number;
   end_position: number;
+  text_in_the_pdf: string;
 }
 
 interface SourceLinkProps {
   source: Source;
   label: string;
-  onViewPDF: (pageNumber: number, title: string, startPosition?: number, endPosition?: number) => void;
+  onViewPDF: (pageNumber: number, title: string, startPosition?: number, endPosition?: number, sourceText?: string) => void;
 }
 
 export const SourceLink = ({ source, label, onViewPDF }: SourceLinkProps) => {
   if (!source || !source.page_no) return null;
 
   const handleClick = () => {
-    onViewPDF(source.page_no, label, source.start_position, source.end_position);
+    onViewPDF(source.page_no, label, source.start_position, source.end_position, source.text_in_the_pdf);
+    console.log(source.text_in_the_pdf)
   };
 
   return (

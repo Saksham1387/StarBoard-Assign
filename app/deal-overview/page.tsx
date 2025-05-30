@@ -349,28 +349,28 @@ export default function DealOverviewPage() {
 
     try {
       // First handle other files and get project ID
-      if (otherFiles.length > 0) {
-        // Upload other files to S3
-        const fileUrls = await Promise.all(
-          otherFiles.map(async (file, index) => {
-            const url = await uploadFileToS3(file);
-            setProgress(20 + (index + 1) * (20 / otherFiles.length));
-            return url;
-          })
-        );
+      // if (otherFiles.length > 0) {
+      //   // Upload other files to S3
+      //   const fileUrls = await Promise.all(
+      //     otherFiles.map(async (file, index) => {
+      //       const url = await uploadFileToS3(file);
+      //       setProgress(20 + (index + 1) * (20 / otherFiles.length));
+      //       return url;
+      //     })
+      //   );
 
-        // Send to processing endpoint
-        const processResponse = await axios.post("http://43.205.239.14:8000/process", {
-          user_id: "user123",
-          file_urls: fileUrls,
-        });
+      //   // Send to processing endpoint
+      //   const processResponse = await axios.post("http://43.205.239.14:8000/process", {
+      //     user_id: "user123",
+      //     file_urls: fileUrls,
+      //   });
 
-        currentProjectId = processResponse.data.project_id;
-        console.log("This is the coming projects ID:", currentProjectId);
+      //   currentProjectId = processResponse.data.project_id;
+      //   console.log("This is the coming projects ID:", currentProjectId);
 
-        setProjectId(currentProjectId);
-        setProgress(50);
-      }
+      //   setProjectId(currentProjectId);
+      //   setProgress(50);
+      // }
 
       // Handle PDF files
       if (pdfFiles.length > 0) {

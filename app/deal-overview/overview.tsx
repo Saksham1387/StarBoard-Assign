@@ -2,7 +2,7 @@
 import { useState } from "react";
 import { useDealOverviewStore } from "@/store/dealStrore";
 import DealOverviewSkeleton from "./skeleton";
-import { PDFViewerModal } from "./components/PDFViewerModal";
+import { PDFViewerExample } from "../pipeline/PDFViewer";
 import { PropertyHeader } from "./components/PropertyHeader";
 import { DealSummary } from "./components/DealSummary";
 import { PersonalizedInsights } from "./components/PersonalizedInsights";
@@ -13,6 +13,7 @@ import { ChatBot } from "./components/ChatBot";
 export interface Source {
   page_no: number;
   start_position: number;
+  text_in_the_pdf:string
   end_position: number;
 }
 
@@ -60,6 +61,7 @@ export default function DealOverview() {
   const [currentPdfTitle, setCurrentPdfTitle] = useState("");
   const [currentStartPosition, setCurrentStartPosition] = useState<number>();
   const [currentEndPosition, setCurrentEndPosition] = useState<number>();
+  const [highlightText, setHighlightText] = useState<string>("");
 
   console.log("Project ID:", dealData.projectId);
   const pdfUrl = "https://assignment-starbaord.s3.ap-south-1.amazonaws.com/uploads/135a3bf8-edd1-4941-bdd9-58ff3bd27e13-280+Richards+-+OM.pdf";
@@ -69,27 +71,41 @@ export default function DealOverview() {
     return <div><DealOverviewSkeleton /></div>;
   }
 
-  const handleViewPDF = (pageNumber: number, title: string, startPosition?: number, endPosition?: number) => {
+  const handleViewPDF = (pageNumber: number, title: string, startPosition?: number, endPosition?: number, sourceText?: string) => {
     console.log("Opening PDF Viewer:", { pageNumber, title, startPosition, endPosition });
     setCurrentPdfPage(pageNumber);
     setCurrentPdfTitle(title);
+    setPdfModalOpen(true);
     setCurrentStartPosition(startPosition);
     setCurrentEndPosition(endPosition);
-    setPdfModalOpen(true);
+    if (sourceText) {
+      setHighlightText(sourceText);
+    }
   };
 
   return (
     <div className="min-h-screen bg-white">
-      {/* PDF Viewer Modal */}
-      <PDFViewerModal 
-        isOpen={pdfModalOpen}
-        onClose={() => setPdfModalOpen(false)}
-        pdfUrl={pdfUrl}
-        pageNumber={currentPdfPage}
-        title={currentPdfTitle}
-        startPosition={currentStartPosition}
-        endPosition={currentEndPosition}
-      />
+      {/* PDF Viewer Side Panel */}
+      {pdfModalOpen && (
+        <div className="fixed right-0 top-0 h-full w-1/3 bg-white shadow-lg z-50 overflow-y-auto">
+          <div className="p-4 border-b flex justify-between items-center">
+            <h3 className="text-lg font-semibold">{currentPdfTitle}</h3>
+            <button 
+              onClick={() => setPdfModalOpen(false)}
+              className="text-gray-500 hover:text-gray-700"
+            >
+              ✕
+            </button>
+          </div>
+          <div className="p-4">
+            <PDFViewerExample 
+              fileUrl={pdfUrl}
+              pageNumber={currentPdfPage}
+              highlightText={highlightText}
+            />
+          </div>
+        </div>
+      )}
 
       {/* Header */}
       <div className="">

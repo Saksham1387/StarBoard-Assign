@@ -5,6 +5,7 @@ import { persist } from "zustand/middleware";
 export type DealOverviewType = {
   projectId?: string;
   dealOverview?: {
+    source?: Source;
     propertyName: string;
     location: string;
     dateUploaded: string;

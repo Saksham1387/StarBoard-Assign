@@ -16,6 +16,7 @@ interface Source {
   page_no: number;
   start_position: number;
   end_position: number;
+  text_in_the_pdf: string;
 }
 
 interface DealOverview {
@@ -36,7 +37,7 @@ interface DealOverview {
 
 interface PropertyHeaderProps {
   dealOverview: DealOverview;
-  onViewPDF: (pageNumber: number, title: string, startPosition?: number, endPosition?: number) => void;
+  onViewPDF: (pageNumber: number, title: string, startPosition?: number, endPosition?: number, sourceText?: string) => void;
 }
 
 const isValidValue = (value: any): boolean => {
