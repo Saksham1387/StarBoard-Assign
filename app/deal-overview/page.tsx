@@ -45,8 +45,6 @@ export default function DealOverviewPage() {
     };
   }, [sending]);
 
-
-
   const uploadFileToS3 = async (file: File) => {
     const filename = encodeURIComponent(file.name);
     const fileType = encodeURIComponent(file.type);
@@ -64,12 +62,10 @@ export default function DealOverviewPage() {
     return s3Data.fileUrl;
   };
 
-
-
   const handleFileUpload = async (files: File[]) => {
     if (!files || files.length === 0) return;
-    const otherFiles = files.filter(file => file.type !== 'application/pdf');
-    const pdfFiles = files.filter(file => file.type === 'application/pdf');
+    const otherFiles = files.filter((file) => file.type !== "application/pdf");
+    const pdfFiles = files.filter((file) => file.type === "application/pdf");
 
     setSending(true);
     setFiles(files);
@@ -105,27 +101,36 @@ export default function DealOverviewPage() {
       // Handle PDF files
       if (pdfFiles.length > 0) {
         for (const pdfFile of pdfFiles) {
-          const url = await uploadFileToS3(pdfFile);
-          setProgress(60);
-          
+          // const url = await uploadFileToS3(pdfFile);
+          // setProgress(60);
+
+          // // Upload CSV files if they exist
+          // const csvUrls = await Promise.all(
+          //   otherFiles.map(async (file) => {
+          //     const url = await uploadFileToS3(file);
+          //     return url;
+          //   })
+          // );
+
           const res = await axios.post("/api/parse-pdf-gemini", {
-            pdfUrl: "https://assignment-starbaord.s3.ap-south-1.amazonaws.com/uploads/15158e48-3fc7-4020-b30e-64b0f98cb8e5-280+Richards+-+OM.pdf",
+            pdfUrl: "https://assignment-starbaord.s3.ap-south-1.amazonaws.com/uploads/04d34a7e-b431-4191-ab42-4afaec0e6f0b-280+Richards+-+OM.pdf",
+            csvUrls: ["https://assignment-starbaord.s3.ap-south-1.amazonaws.com/uploads/89ee002b-3693-488e-bc4e-fab1ee6c66aa-280_Richards_Pro_Forma (2).csv","https://assignment-starbaord.s3.ap-south-1.amazonaws.com/uploads/7895090b-bfb2-40ee-9cf7-07a87c009ee5-280_Richards_Rent_Roll (2).csv","https://assignment-starbaord.s3.ap-south-1.amazonaws.com/uploads/2d023bbc-2042-4242-bdbd-e7fe4b5824cf-Tenant_History (1).csv"]
           });
 
           console.log("Response:", res.data);
 
           setLeaseData(res.data.data.tenantData);
-          
+
           // Set dealData with projectId included
           const dealData1 = {
             ...res.data.data.leaseData,
-            projectId: currentProjectId // Use the projectId we got earlier
+            projectId: currentProjectId, // Use the projectId we got earlier
           };
-          
+
           setDealData(dealData1);
           setProgress(100);
           setSending(false);
-          
+
           // Redirect only after PDF parsing is complete
           router.push("/lease");
         }
@@ -134,7 +139,6 @@ export default function DealOverviewPage() {
         setProgress(100);
         setSending(false);
       }
-
     } catch (error) {
       console.error("Error processing files:", error);
       setSending(false);
@@ -150,10 +154,10 @@ export default function DealOverviewPage() {
               <Progress value={progress} className="h-2" />
               <div className="flex justify-between items-center">
                 <p className="text-sm text-gray-500">
-                  {progress < 20 
-                    ? `Uploading ${files.length} files to S3...` 
-                    : progress < 50 
-                    ? "Processing other files..." 
+                  {progress < 20
+                    ? `Uploading ${files.length} files to S3...`
+                    : progress < 50
+                    ? "Processing other files..."
                     : progress < 60
                     ? "Uploading PDF to S3..."
                     : "Parsing PDF..."}

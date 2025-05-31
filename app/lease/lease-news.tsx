@@ -23,7 +23,11 @@ import { formatDate } from "@/lib/helper";
 import Image from "next/image";
 import { useLeaseStore } from "@/store/leaseStore";
 
-export default function LeaseNews() {
+interface LeaseNewsProps {
+  onViewPDF: (pageNumber: number, title: string, startPosition?: number, endPosition?: number, sourceText?: string) => void;
+}
+
+export default function LeaseNews({ onViewPDF }: LeaseNewsProps) {
   const newsPerPage = 5;
   const { leaseData, setLeaseData, isDataLoaded } = useLeaseStore();
   const tenant = leaseData.tenant!;

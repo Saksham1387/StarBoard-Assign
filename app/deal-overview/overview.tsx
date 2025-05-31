@@ -74,6 +74,7 @@ export default function DealOverview() {
     setCurrentStartPosition(startPosition);
     setCurrentEndPosition(endPosition);
     if (sourceText) {
+      console.log("Setting highlight text:", sourceText);
       setHighlightText(sourceText);
     }
   };

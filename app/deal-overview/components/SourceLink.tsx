@@ -18,8 +18,8 @@ export const SourceLink = ({ source, label, onViewPDF }: SourceLinkProps) => {
   if (!source || !source.page_no) return null;
 
   const handleClick = () => {
-    onViewPDF(source.page_no, label, source.start_position, source.end_position, source.text_in_the_pdf);
-    console.log(source.text_in_the_pdf)
+    console.log("SourceLink clicked:", source);
+    onViewPDF(source.page_no, label, 0, 0, source.text_in_the_pdf);
   };
 
   return (

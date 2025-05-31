@@ -15,6 +15,7 @@ import { formatDate } from "@/lib/helper";
 import Image from "next/image";
 import { useLeaseStore } from "@/store/leaseStore";
 import { Skeleton } from "@/components/ui/skeleton";
+import { SourceLink } from "../deal-overview/components/SourceLink";
 
 const isValidValue = (value: any): boolean => {
   return (
@@ -26,7 +27,11 @@ const isValidValue = (value: any): boolean => {
   );
 };
 
-export default function LeaseAbstract() {
+interface LeaseAbstractProps {
+  onViewPDF: (pageNumber: number, title: string, startPosition?: number, endPosition?: number, sourceText?: string) => void;
+}
+
+export default function LeaseAbstract({ onViewPDF }: LeaseAbstractProps) {
   const { leaseData } = useLeaseStore();
 
   if (
@@ -107,16 +112,18 @@ export default function LeaseAbstract() {
           <Card>
             <CardContent className="pt-6">
               <div className="text-sm text-gray-500 mb-1 flex flex-row items-center gap-2">
-                <Image src="Frame.svg" alt="Tenant" width={30} height={30} />
+                <DollarSign className="w-5 h-5" />
                 Base Rent PSF
               </div>
               <div className="font-medium text-lg">
                 {leaseData.rent.baseRentPSF}
               </div>
-              {isValidValue(leaseData.escalations.rate) && (
-                <div className="text-xs text-gray-500 mt-1">
-                  Annual Escalation: {leaseData.escalations.rate}
-                </div>
+              {leaseData.rent.source && (
+                <SourceLink 
+                  source={leaseData.rent.source}
+                  label="Base Rent"
+                  onViewPDF={onViewPDF}
+                />
               )}
             </CardContent>
           </Card>
@@ -143,7 +150,16 @@ export default function LeaseAbstract() {
         isValidValue(leaseData.recoveries.operatingExpenses)) && (
         <Card>
           <CardHeader className="pb-2">
-            <CardTitle>Tenant Information</CardTitle>
+            <div className="flex items-center justify-between">
+              <CardTitle>Tenant Information</CardTitle>
+              {leaseData.tenant.source && (
+                <SourceLink 
+                  source={leaseData.tenant.source}
+                  label="Tenant Information"
+                  onViewPDF={onViewPDF}
+                />
+              )}
+            </div>
           </CardHeader>
           <CardContent>
             <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6">
@@ -191,7 +207,16 @@ export default function LeaseAbstract() {
         isValidValue(leaseData.lease.remainingTerm)) && (
         <Card>
           <CardHeader className="pb-2">
-            <CardTitle>Lease Term</CardTitle>
+            <div className="flex items-center justify-between">
+              <CardTitle>Lease Term</CardTitle>
+              {leaseData.lease.source && (
+                <SourceLink 
+                  source={leaseData.lease.source}
+                  label="Lease Term"
+                  onViewPDF={onViewPDF}
+                />
+              )}
+            </div>
           </CardHeader>
           <CardContent>
             <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6">
@@ -251,7 +276,16 @@ export default function LeaseAbstract() {
         isValidValue(leaseData.rent.effectiveRentPSF)) && (
         <Card>
           <CardHeader className="pb-2">
-            <CardTitle>Rent Structure</CardTitle>
+            <div className="flex items-center justify-between">
+              <CardTitle>Rent Structure</CardTitle>
+              {leaseData.rent.source && (
+                <SourceLink 
+                  source={leaseData.rent.source}
+                  label="Rent Structure"
+                  onViewPDF={onViewPDF}
+                />
+              )}
+            </div>
           </CardHeader>
           <CardContent>
             <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6">
@@ -318,7 +352,16 @@ export default function LeaseAbstract() {
         isValidValue(leaseData.escalations.nextEscalation)) && (
         <Card>
           <CardHeader className="pb-2">
-            <CardTitle>Escalations</CardTitle>
+            <div className="flex items-center justify-between">
+              <CardTitle>Escalations</CardTitle>
+              {leaseData.escalations.source && (
+                <SourceLink 
+                  source={leaseData.escalations.source}
+                  label="Escalations"
+                  onViewPDF={onViewPDF}
+                />
+              )}
+            </div>
           </CardHeader>
           <CardContent>
             <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
@@ -364,46 +407,32 @@ export default function LeaseAbstract() {
 
       {/* Recovery Terms */}
       {(isValidValue(leaseData.recoveries.operatingExpenses) ||
-        isValidValue(leaseData.recoveries.cam) ||
-        isValidValue(leaseData.recoveries.insurance) ||
-        isValidValue(leaseData.recoveries.taxes)) && (
+        isValidValue(leaseData.recoveries.taxes) ||
+        isValidValue(leaseData.recoveries.insurance)) && (
         <Card>
           <CardHeader className="pb-2">
-            <CardTitle>Recovery Terms</CardTitle>
+            <div className="flex items-center justify-between">
+              <CardTitle>Recovery Terms</CardTitle>
+              {leaseData.recoveries.source && (
+                <SourceLink 
+                  source={leaseData.recoveries.source}
+                  label="Recovery Terms"
+                  onViewPDF={onViewPDF}
+                />
+              )}
+            </div>
           </CardHeader>
           <CardContent>
-            <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6">
+            <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
               {isValidValue(leaseData.recoveries.operatingExpenses) && (
                 <div>
                   <div className="text-sm text-gray-500 mb-1">
                     Operating Expenses
                   </div>
                   <div className="flex items-center">
-                    <Building size={16} className="mr-2 text-gray-400" />
+                    <Receipt size={16} className="mr-2 text-gray-400" />
                     <div className="font-medium">
                       {leaseData.recoveries.operatingExpenses}
-                    </div>
-                  </div>
-                </div>
-              )}
-              {isValidValue(leaseData.recoveries.cam) && (
-                <div>
-                  <div className="text-sm text-gray-500 mb-1">CAM</div>
-                  <div className="flex items-center">
-                    <Building size={16} className="mr-2 text-gray-400" />
-                    <div className="font-medium">
-                      {leaseData.recoveries.cam}
-                    </div>
-                  </div>
-                </div>
-              )}
-              {isValidValue(leaseData.recoveries.insurance) && (
-                <div>
-                  <div className="text-sm text-gray-500 mb-1">Insurance</div>
-                  <div className="flex items-center">
-                    <Shield size={16} className="mr-2 text-gray-400" />
-                    <div className="font-medium">
-                      {leaseData.recoveries.insurance}
                     </div>
                   </div>
                 </div>
@@ -419,6 +448,17 @@ export default function LeaseAbstract() {
                   </div>
                 </div>
               )}
+              {isValidValue(leaseData.recoveries.insurance) && (
+                <div>
+                  <div className="text-sm text-gray-500 mb-1">Insurance</div>
+                  <div className="flex items-center">
+                    <Shield size={16} className="mr-2 text-gray-400" />
+                    <div className="font-medium">
+                      {leaseData.recoveries.insurance}
+                    </div>
+                  </div>
+                </div>
+              )}
             </div>
           </CardContent>
         </Card>
@@ -428,7 +468,16 @@ export default function LeaseAbstract() {
       {leaseData.renewalOptions.length > 0 && (
         <Card>
           <CardHeader className="pb-2">
-            <CardTitle>Renewal Options</CardTitle>
+            <div className="flex items-center justify-between">
+              <CardTitle>Renewal Options</CardTitle>
+              {leaseData.renewalOptions[0]?.source && (
+                <SourceLink 
+                  source={leaseData.renewalOptions[0].source}
+                  label="Renewal Options"
+                  onViewPDF={onViewPDF}
+                />
+              )}
+            </div>
           </CardHeader>
           <CardContent>
             <div className="space-y-4">
@@ -481,7 +530,16 @@ export default function LeaseAbstract() {
         isValidValue(leaseData.security.letterOfCredit)) && (
         <Card>
           <CardHeader className="pb-2">
-            <CardTitle>Security</CardTitle>
+            <div className="flex items-center justify-between">
+              <CardTitle>Security</CardTitle>
+              {leaseData.security.source && (
+                <SourceLink 
+                  source={leaseData.security.source}
+                  label="Security"
+                  onViewPDF={onViewPDF}
+                />
+              )}
+            </div>
           </CardHeader>
           <CardContent>
             <div className="grid grid-cols-1 md:grid-cols-3 gap-6">

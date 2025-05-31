@@ -45,7 +45,11 @@ const RECOVERY_COLORS: Record<RecoveryType, string> = {
   Insurance: "#FFBB28",
 };
 
-export default function LeaseCharts() {
+interface LeaseChartsProps {
+  onViewPDF: (pageNumber: number, title: string, startPosition?: number, endPosition?: number, sourceText?: string) => void;
+}
+
+export default function LeaseCharts({ onViewPDF }: LeaseChartsProps) {
   const rentScheduleData = generateRentScheduleData();
   const marketComparisonData = generateMarketComparisonData();
   const recoveryBreakdownData = generateRecoveryBreakdownData();

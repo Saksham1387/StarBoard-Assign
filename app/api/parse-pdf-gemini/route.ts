@@ -5,6 +5,7 @@ import * as fs from 'fs';
 import * as path from 'path';
 import * as os from 'os';
 import fetch from 'node-fetch';
+import { parse } from 'csv-parse/sync';
 
 const genAI = new GoogleGenerativeAI(process.env.GEMINI_API_KEY || "");
 
@@ -12,27 +13,47 @@ const genAI = new GoogleGenerativeAI(process.env.GEMINI_API_KEY || "");
 const pdfCache = new Map<string, { leaseData: any; tenantData: any; timestamp: number }>();
 const CACHE_TTL = 24 * 60 * 60 * 1000; // 24 hours in milliseconds
 
-const downloadPDF = async (url: string): Promise<string> => {
+const downloadFile = async (url: string, fileType: string): Promise<string> => {
   const response = await fetch(url);
   if (!response.ok) {
-    throw new Error(`Failed to download PDF: ${response.statusText}`);
+    throw new Error(`Failed to download file: ${response.statusText}`);
   }
 
   const buffer = await response.buffer();
   const tempDir = os.tmpdir();
-  const tempFilePath = path.join(tempDir, `temp-${Date.now()}.pdf`);
+  const tempFilePath = path.join(tempDir, `temp-${Date.now()}.${fileType}`);
   
   fs.writeFileSync(tempFilePath, buffer);
   return tempFilePath;
 };
 
-const parsePDFWithGemini = async (filePath: string) => {
+const parseCSV = async (filePath: string) => {
+  try {
+    const fileContent = fs.readFileSync(filePath, 'utf-8');
+    const records = parse(fileContent, {
+      columns: true,
+      skip_empty_lines: true
+    });
+    return records;
+  } catch (error) {
+    console.error("Error parsing CSV:", error);
+    throw error;
+  }
+};
+
+const parsePDFWithGemini = async (filePath: string, csvData: any[] = []) => {
   try {
     const model = genAI.getGenerativeModel({ model: "gemini-2.5-flash-preview-05-20" });
     const fileBuffer = fs.readFileSync(filePath);
 
+    // Modify prompt to include CSV data if available
+    let enhancedPrompt = prompt;
+    if (csvData.length > 0) {
+      enhancedPrompt += "\n\nAdditional data from CSV files:\n" + JSON.stringify(csvData, null, 2);
+    }
+
     const result = await model.generateContent([
-      prompt,
+      enhancedPrompt,
       {
         inlineData: {
           mimeType: "application/pdf",
@@ -43,7 +64,6 @@ const parsePDFWithGemini = async (filePath: string) => {
 
     const response = await result.response;
     const text = response.text();
-
 
     console.log(text) 
     
@@ -65,21 +85,8 @@ const parsePDFWithGemini = async (filePath: string) => {
       throw new Error("No valid JSON objects found in the response");
     }
 
-    // console.log("JSON Matches:", jsonMatches);
-
-
     const leaseData = jsonMatches[0];
     const tenantData = leaseData.tenantDetails;
-
-
-    // console.log("Lease Data:", leaseData);
-    // console.log("Tenant Data:", tenantData);
-
-    // if (leaseData.lease.expiryDate !== "N/A") {
-    //   leaseData.lease.remainingTerm = calculateRemainingTerm(
-    //     leaseData.lease.expiryDate
-    //   );
-    // }
 
     return { leaseData, tenantData };
   } catch (error) {
@@ -97,7 +104,7 @@ const parsePDFWithGemini = async (filePath: string) => {
 
 export async function POST(req: NextRequest) {
   try {
-    const { pdfUrl } = await req.json();
+    const { pdfUrl, csvUrls } = await req.json();
 
     if (!pdfUrl) {
       return NextResponse.json(
@@ -122,8 +129,25 @@ export async function POST(req: NextRequest) {
       });
     }
 
-    const tempFilePath = await downloadPDF(pdfUrl);
-    const { leaseData, tenantData } = await parsePDFWithGemini(tempFilePath);
+    // Download and parse CSV files if they exist
+    let csvData = [];
+    if (csvUrls && csvUrls.length > 0) {
+      const csvPromises = csvUrls.map(async (url: string) => {
+        const tempFilePath = await downloadFile(url, 'csv');
+        const data = await parseCSV(tempFilePath);
+        try {
+          fs.unlinkSync(tempFilePath);
+        } catch (error) {
+          console.error("Error deleting temporary CSV file:", error);
+        }
+        return data;
+      });
+      
+      csvData = await Promise.all(csvPromises);
+    }
+
+    const tempFilePath = await downloadFile(pdfUrl, 'pdf');
+    const { leaseData, tenantData } = await parsePDFWithGemini(tempFilePath, csvData);
 
     // Store in cache
     pdfCache.set(pdfUrl, {
@@ -143,9 +167,9 @@ export async function POST(req: NextRequest) {
 
     return NextResponse.json(result);
   } catch (error) {
-    console.error("Error processing PDF:", error);
+    console.error("Error processing files:", error);
     return NextResponse.json(
-      { error: "Failed to process PDF" },
+      { error: "Failed to process files" },
       { status: 500 }
     );
   }

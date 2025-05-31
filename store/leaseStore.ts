@@ -1,34 +1,46 @@
 import { create } from "zustand";
 import { persist } from "zustand/middleware";
 
+interface Source {
+  page_no: number;
+  start_position: number;
+  end_position: number;
+  text_in_the_pdf: string;
+}
+
 export type LeaseDataType = {
   tenant?: {
     name: string;
     logo: string;
     industry: string;
     creditRating: string;
+    source?: Source;
   };
   lease?: {
     startDate: string;
     expiryDate: string;
     term: string;
     remainingTerm: string;
+    source?: Source;
   };
   rent?: {
     baseRentPSF: string;
     annualBaseRent: string;
     monthlyBaseRent: string;
     effectiveRentPSF: string;
+    source?: Source;
   };
   escalations?: {
     structure: string;
     rate: string;
     nextEscalation: string;
+    source?: Source;
   };
   renewalOptions?: Array<{
     term: string;
     notice: string;
     rentStructure: string;
+    source?: Source;
   }>;
   recoveries?: {
     operatingExpenses: string;
@@ -36,11 +48,13 @@ export type LeaseDataType = {
     insurance: string;
     taxes: string;
     utilities: string;
+    source?: Source;
   };
   security?: {
     deposit: string;
     equivalent: string;
     letterOfCredit: string;
+    source?: Source;
   };
   otherTerms?: Array<{
     title: string;
