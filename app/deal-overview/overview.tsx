@@ -2,7 +2,7 @@
 import { useState } from "react";
 import { useDealOverviewStore } from "@/store/dealStrore";
 import DealOverviewSkeleton from "./skeleton";
-import { PDFViewerExample } from "../pipeline/PDFViewer";
+import { PDFViewerExample } from "../../components/PDFViewer";
 import { PropertyHeader } from "./components/PropertyHeader";
 import { DealSummary } from "./components/DealSummary";
 import { PersonalizedInsights } from "./components/PersonalizedInsights";
@@ -50,10 +50,6 @@ interface AssetLevelData {
   occupancyRate?: string;
 }
 
-
-interface Props {
-  projectId: string;
-}
 export default function DealOverview() {
   const { dealData, isDataLoaded } = useDealOverviewStore();
   const [pdfModalOpen, setPdfModalOpen] = useState(false);
@@ -63,10 +59,9 @@ export default function DealOverview() {
   const [currentEndPosition, setCurrentEndPosition] = useState<number>();
   const [highlightText, setHighlightText] = useState<string>("");
 
-  console.log("Project ID:", dealData.projectId);
-  const pdfUrl = "https://assignment-starbaord.s3.ap-south-1.amazonaws.com/uploads/135a3bf8-edd1-4941-bdd9-58ff3bd27e13-280+Richards+-+OM.pdf";
+  const pdfUrl = "https://assignment-starbaord.s3.ap-south-1.amazonaws.com/uploads/15158e48-3fc7-4020-b30e-64b0f98cb8e5-280+Richards+-+OM.pdf";
 
-  console.log("Deal Data:", dealData);
+  // console.log("Deal Data:", dealData);
   if (!isDataLoaded || !dealData) {
     return <div><DealOverviewSkeleton /></div>;
   }
@@ -85,24 +80,26 @@ export default function DealOverview() {
 
   return (
     <div className="min-h-screen bg-white">
-      {/* PDF Viewer Side Panel */}
+      {/* PDF Viewer Modal */}
       {pdfModalOpen && (
-        <div className="fixed right-0 top-0 h-full w-1/3 bg-white shadow-lg z-50 overflow-y-auto">
-          <div className="p-4 border-b flex justify-between items-center">
-            <h3 className="text-lg font-semibold">{currentPdfTitle}</h3>
-            <button 
-              onClick={() => setPdfModalOpen(false)}
-              className="text-gray-500 hover:text-gray-700"
-            >
-              ✕
-            </button>
-          </div>
-          <div className="p-4">
-            <PDFViewerExample 
-              fileUrl={pdfUrl}
-              pageNumber={currentPdfPage}
-              highlightText={highlightText}
-            />
+        <div className="fixed inset-0 bg-black bg-opacity-50 z-40">
+          <div className="fixed left-0 top-0 h-full w-4/5 bg-white shadow-lg transform transition-transform duration-300 ease-in-out">
+            <div className="p-4 border-b flex justify-between items-center">
+              <h3 className="text-lg font-semibold">{currentPdfTitle}</h3>
+              <button 
+                onClick={() => setPdfModalOpen(false)}
+                className="text-gray-500 hover:text-gray-700"
+              >
+                ✕
+              </button>
+            </div>
+            <div className="p-4 h-[calc(100%-4rem)] overflow-auto">
+              <PDFViewerExample 
+                fileUrl={pdfUrl}
+                pageNumber={currentPdfPage}
+                highlightText={highlightText}
+              />
+            </div>
           </div>
         </div>
       )}

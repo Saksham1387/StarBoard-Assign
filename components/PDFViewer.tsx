@@ -1,5 +1,5 @@
 "use client";
-import { useCallback, useRef, useState } from "react";
+import { useCallback, useRef, useState, useEffect } from "react";
 import { Document, Page } from "react-pdf";
 import { pdfjs } from "react-pdf";
 import "react-pdf/dist/esm/Page/AnnotationLayer.css";
@@ -12,160 +12,284 @@ interface PDFViewerExampleProps {
   pageNumber?: number;
   highlightText?: string;
 }
-export function PDFViewerExample({fileUrl, pageNumber , highlightText}: PDFViewerExampleProps) {
+
+interface TextSpan {
+  element: HTMLElement;
+  text: string;
+  normalizedText: string;
+  startIndex: number;
+  endIndex: number;
+  rect?: DOMRect;
+}
+
+interface HighlightMatch {
+  startSpanIndex: number;
+  endSpanIndex: number;
+  startOffset: number;
+  endOffset: number;
+  matchText: string;
+}
+
+export function PDFViewerExample({fileUrl, pageNumber, highlightText}: PDFViewerExampleProps) {
   const [numPages, setNumPages] = useState<number>();
-  const highlightColor = "#ff0"; // Custom highlight color
+  const highlightColor = "#ff0";
   const pageRef = useRef<HTMLDivElement>(null);
+  const [textSpans, setTextSpans] = useState<TextSpan[]>([]);
 
-  // Text to highlight - simplified for testing
+  // Normalize text for better matching (remove extra spaces, handle special chars)
+  const normalizeText = (text: string): string => {
+    return text
+      .toLowerCase()
+      .replace(/\s+/g, ' ') // Replace multiple spaces with single space
+      .replace(/[\u00A0\u2000-\u200B\u2028\u2029]/g, ' ') // Replace various unicode spaces
+      .trim();
+  };
 
+  // Create fuzzy regex for more flexible matching
+  const createSearchRegex = (searchText: string): RegExp => {
+    const escaped = searchText.replace(/[.*+?^${}()|[\]\\]/g, '\\$&');
+    // Allow for flexible spacing and line breaks
+    const flexible = escaped.replace(/\s+/g, '\\s*');
+    return new RegExp(flexible, 'gi');
+  };
 
-  const observeTextLayer = () => {
-    if (!pageRef.current) return;
-    const observer = new MutationObserver((mutations, obs) => {
-      const textLayer = pageRef.current?.querySelector('.react-pdf__Page__textContent');
-      if (textLayer && textLayer.childElementCount > 0) {
-        highlightTextInPage();
-        obs.disconnect(); // Done observing
+  // Build comprehensive text map from all spans
+  const buildTextMap = (textLayer: Element): TextSpan[] => {
+    const spans = Array.from(textLayer.querySelectorAll('span')) as HTMLElement[];
+    const textSpans: TextSpan[] = [];
+    let currentIndex = 0;
+
+    spans.forEach((span) => {
+      const text = span.textContent || '';
+      const normalizedText = normalizeText(text);
+      
+      if (text.trim()) { // Only include non-empty spans
+        textSpans.push({
+          element: span,
+          text,
+          normalizedText,
+          startIndex: currentIndex,
+          endIndex: currentIndex + normalizedText.length,
+          rect: span.getBoundingClientRect()
+        });
+        currentIndex += normalizedText.length;
       }
     });
-  
-    observer.observe(pageRef.current, {
-      childList: true,
-      subtree: true,
+
+    return textSpans;
+  };
+
+  // Find all matches using multiple strategies
+  const findMatches = (textSpans: TextSpan[], searchText: string): HighlightMatch[] => {
+    if (!searchText.trim()) return [];
+
+    const matches: HighlightMatch[] = [];
+    const normalizedSearch = normalizeText(searchText);
+    const searchRegex = createSearchRegex(normalizedSearch);
+
+    // Strategy 1: Direct span matching (fastest)
+    textSpans.forEach((span, index) => {
+      const spanMatches = [...span.normalizedText.matchAll(searchRegex)];
+      spanMatches.forEach(match => {
+        if (match.index !== undefined) {
+          matches.push({
+            startSpanIndex: index,
+            endSpanIndex: index,
+            startOffset: match.index,
+            endOffset: match.index + match[0].length,
+            matchText: match[0]
+          });
+        }
+      });
+    });
+
+    // Strategy 2: Cross-span matching
+    const fullText = textSpans.map(span => span.normalizedText).join('');
+    const crossSpanMatches = [...fullText.matchAll(searchRegex)];
+    
+    crossSpanMatches.forEach(match => {
+      if (match.index !== undefined) {
+        const startPos = match.index;
+        const endPos = match.index + match[0].length;
+        
+        // Find which spans contain this match
+        const startSpan = textSpans.findIndex(span => 
+          startPos >= span.startIndex && startPos < span.endIndex
+        );
+        const endSpan = textSpans.findIndex(span => 
+          endPos > span.startIndex && endPos <= span.endIndex
+        );
+
+        if (startSpan !== -1 && endSpan !== -1) {
+          // Check if this is a new match (not already found in Strategy 1)
+          const isNewMatch = !matches.some(existingMatch => 
+            existingMatch.startSpanIndex === startSpan && 
+            existingMatch.endSpanIndex === endSpan &&
+            Math.abs(existingMatch.startOffset - (startPos - textSpans[startSpan].startIndex)) < 2
+          );
+
+          if (isNewMatch) {
+            matches.push({
+              startSpanIndex: startSpan,
+              endSpanIndex: endSpan,
+              startOffset: startPos - textSpans[startSpan].startIndex,
+              endOffset: endPos - textSpans[endSpan].startIndex,
+              matchText: match[0]
+            });
+          }
+        }
+      }
+    });
+
+    // Strategy 3: Fuzzy matching for common PDF text extraction issues
+    if (matches.length === 0) {
+      return findFuzzyMatches(textSpans, searchText);
+    }
+
+    return matches;
+  };
+
+  // Fuzzy matching for problematic text extraction
+  const findFuzzyMatches = (textSpans: TextSpan[], searchText: string): HighlightMatch[] => {
+    const matches: HighlightMatch[] = [];
+    const searchWords = normalizeText(searchText).split(' ').filter(word => word.length > 2);
+    
+    if (searchWords.length === 0) return matches;
+
+    // Look for sequences where most words match
+    for (let i = 0; i < textSpans.length; i++) {
+      for (let j = i; j < Math.min(i + 10, textSpans.length); j++) {
+        const spanRange = textSpans.slice(i, j + 1);
+        const combinedText = spanRange.map(span => span.normalizedText).join(' ');
+        
+        const matchedWords = searchWords.filter(word => 
+          combinedText.includes(word)
+        );
+        
+        // If most words match, consider it a fuzzy match
+        if (matchedWords.length >= Math.ceil(searchWords.length * 0.7)) {
+          matches.push({
+            startSpanIndex: i,
+            endSpanIndex: j,
+            startOffset: 0,
+            endOffset: spanRange[spanRange.length - 1].normalizedText.length,
+            matchText: combinedText
+          });
+        }
+      }
+    }
+
+    return matches;
+  };
+
+  // Apply highlights to the DOM
+  const applyHighlights = (matches: HighlightMatch[], textSpans: TextSpan[]) => {
+    // Remove existing highlights
+    textSpans.forEach(span => {
+      const existingHighlights = span.element.querySelectorAll('.custom-highlight');
+      existingHighlights.forEach(highlight => {
+        const parent = highlight.parentNode;
+        if (parent) {
+          parent.replaceChild(document.createTextNode(highlight.textContent || ''), highlight);
+          parent.normalize();
+        }
+      });
+    });
+
+    // Apply new highlights
+    matches.forEach(match => {
+      if (match.startSpanIndex === match.endSpanIndex) {
+        // Single span highlight
+        const span = textSpans[match.startSpanIndex];
+        const originalText = span.element.textContent || '';
+        const before = originalText.substring(0, match.startOffset);
+        const highlighted = originalText.substring(match.startOffset, match.endOffset);
+        const after = originalText.substring(match.endOffset);
+
+        span.element.innerHTML = 
+          before + 
+          `<span class="custom-highlight" style="background-color: ${highlightColor}; padding: 1px 2px; border-radius: 2px; color: black;">${highlighted}</span>` + 
+          after;
+      } else {
+        // Multi-span highlight
+        for (let i = match.startSpanIndex; i <= match.endSpanIndex; i++) {
+          const span = textSpans[i];
+          const originalText = span.element.textContent || '';
+          
+          let highlightStart = 0;
+          let highlightEnd = originalText.length;
+          
+          if (i === match.startSpanIndex) {
+            highlightStart = match.startOffset;
+          }
+          if (i === match.endSpanIndex) {
+            highlightEnd = match.endOffset;
+          }
+
+          const before = originalText.substring(0, highlightStart);
+          const highlighted = originalText.substring(highlightStart, highlightEnd);
+          const after = originalText.substring(highlightEnd);
+
+          span.element.innerHTML = 
+            before + 
+            `<span class="custom-highlight" style="background-color: ${highlightColor}; padding: 1px 2px; border-radius: 2px; color: black;">${highlighted}</span>` + 
+            after;
+        }
+      }
     });
   };
-  
+
+  // Main highlighting function
+  const highlightTextInPage = useCallback(() => {
+    if (!highlightText || !pageRef.current) return;
+
+    const textLayer = pageRef.current.querySelector('.react-pdf__Page__textContent');
+    if (!textLayer) return;
+
+    // Build text map
+    const spans = buildTextMap(textLayer);
+    setTextSpans(spans);
+
+    // Find matches
+    const matches = findMatches(spans, highlightText);
+    
+    console.log(`Found ${matches.length} matches for "${highlightText}"`);
+    
+    // Apply highlights
+    if (matches.length > 0) {
+      applyHighlights(matches, spans);
+    }
+  }, [highlightText]);
+
+  // Enhanced page render success handler
+  const onPageRenderSuccess = useCallback(() => {
+    console.log(`Page rendered successfully`);
+    if (highlightText && pageRef.current) {
+      // Use multiple timeout strategies for different PDF types
+      const timeouts = [100, 300, 600, 1000];
+      
+      timeouts.forEach(timeout => {
+        setTimeout(() => {
+          const textLayer = pageRef.current?.querySelector('.react-pdf__Page__textContent');
+          if (textLayer && textLayer.children.length > 0) {
+            highlightTextInPage();
+          }
+        }, timeout);
+      });
+    }
+  }, [highlightText, highlightTextInPage]);
+
   function onDocumentLoadSuccess({ numPages }: { numPages: number }): void {
     setNumPages(numPages);
   }
 
-  const onPageRenderSuccess = useCallback(() => {
-    console.log(`Page rendered successfully`);
-    if (highlightText && pageRef.current) {
-      // Wait longer for text layer to be fully rendered
-      setTimeout(() => {
-        highlightTextInPage();
-      }, 500);
+  // Re-highlight when highlightText changes
+  useEffect(() => {
+    if (highlightText) {
+      const timer = setTimeout(highlightTextInPage, 200);
+      return () => clearTimeout(timer);
     }
-  }, [highlightText]);
-
-  const highlightTextInPage = () => {
-    if (!highlightText || !pageRef.current) return;
-
-    // Find the text layer within the page
-    const textLayer = pageRef.current.querySelector('.react-pdf__Page__textContent');
-    if (!textLayer) {
-      
-      return;
-    }
-
-    // Remove existing highlights
-    const existingHighlights = textLayer.querySelectorAll('.custom-highlight');
-    existingHighlights.forEach(el => {
-      const parent = el.parentNode;
-      if (parent) {
-        parent.replaceChild(document.createTextNode(el.textContent || ''), el);
-        parent.normalize();
-      }
-    });
-
-    // Find and highlight text in spans
-    const textElements = textLayer.querySelectorAll('span');
-    const searchText = highlightText.toLowerCase();
-    
-    
-    
-    // Debug: Log all text content to see what's actually in the PDF
-    textElements.forEach((element, index) => {
-      const text = element.textContent || '';
-      if (text.trim()) {
-        
-      }
-    });
-
-    // Highlight table-specific patterns
-    // highlightTablePattern(textElements);
-    
-    // Standard single-span highlighting
-    textElements.forEach((element, index) => {
-      const textContent = element.textContent?.toLowerCase() || '';
-      const originalText = element.textContent || '';
-      
-      if (textContent.includes(searchText)) {
-       
-        
-        // Create a case-insensitive regex
-        const regex = new RegExp(`(${highlightText.replace(/[.*+?^${}()|[\]\\]/g, '\\$&')})`, 'gi');
-        const highlightedHTML = originalText.replace(
-          regex, 
-          `<span class="custom-highlight" style="background-color: ${highlightColor}; padding: 1px 2px; border-radius: 2px; color: black;">$1</span>`
-        );
-        element.innerHTML = highlightedHTML;
-      }
-    });
-
-    // Alternative approach: look for partial matches across multiple spans
-    const allText = Array.from(textElements).map(el => el.textContent || '').join('');
-    if (allText.toLowerCase().includes(searchText)) {
-      console.log('Text found across multiple spans, implementing cross-span highlighting...');
-      highlightAcrossSpans(textElements, highlightText);
-    }
-  };
-
-  const highlightAcrossSpans = (elements: NodeListOf<Element>, searchText: string) => {
-    const spans = Array.from(elements);
-    let fullText = '';
-    let spanMap: Array<{ span: Element; start: number; end: number }> = [];
-    
-    // Build a map of text positions to spans
-    spans.forEach(span => {
-      const text = span.textContent || '';
-      spanMap.push({
-        span,
-        start: fullText.length,
-        end: fullText.length + text.length
-      });
-      fullText += text;
-    });
-
-    // Find matches in the full text
-    const searchLower = searchText.toLowerCase();
-    const fullTextLower = fullText.toLowerCase();
-    let index = fullTextLower.indexOf(searchLower);
-    
-    while (index !== -1) {
-      const matchStart = index;
-      const matchEnd = index + searchText.length;
-      
-      // Find which spans contain this match
-      spanMap.forEach(({ span, start, end }) => {
-        const overlapStart = Math.max(matchStart, start);
-        const overlapEnd = Math.min(matchEnd, end);
-        
-        if (overlapStart < overlapEnd) {
-          // This span contains part of the match
-          const spanText = span.textContent || '';
-          const relativeStart = overlapStart - start;
-          const relativeEnd = overlapEnd - start;
-          
-          const before = spanText.substring(0, relativeStart);
-          const matched = spanText.substring(relativeStart, relativeEnd);
-          const after = spanText.substring(relativeEnd);
-          
-          span.innerHTML = before + 
-            `<span class="custom-highlight" style="background-color: ${highlightColor}; padding: 1px 2px; border-radius: 2px; color: black;">${matched}</span>` + 
-            after;
-        }
-      });
-      
-      // Look for next match
-      index = fullTextLower.indexOf(searchLower, index + 1);
-    }
-  };
-
-
-
+  }, [highlightText, highlightTextInPage]);
 
   return (
     <div className="flex items-center justify-center flex-row pdf-viewer-container">
@@ -232,6 +356,8 @@ export function PDFViewerExample({fileUrl, pageNumber , highlightText}: PDFViewe
     </div>
   );
 }
+
+
 
 
 // "use client";
