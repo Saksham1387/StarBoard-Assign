@@ -9,7 +9,7 @@ import { PersonalizedInsights } from "./components/PersonalizedInsights";
 import { AnalyticsSection } from "./components/AnalyticsSection";
 import { AssetLevelData } from "./components/AssetLevelData";
 import { ChatBot } from "./components/ChatBot";
-import PDFCSVViewer from "@/components/PDFViewer";
+import EnhancedPDFCSVViewer from "@/components/PDFViewer";
 
 export interface Source {
   page_no: number;
@@ -97,7 +97,7 @@ export default function DealOverview() {
               </button>
             </div>
             <div className="p-4 h-[calc(100%-4rem)] overflow-auto">
-              <PDFCSVViewer 
+              <EnhancedPDFCSVViewer 
                 fileUrl={pdfUrl}
                 pageNumber={currentPdfPage}
                 highlightText={highlightText}

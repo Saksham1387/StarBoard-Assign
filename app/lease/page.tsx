@@ -11,7 +11,7 @@ import MyDoc from "@/components/summary-pdf";
 import { useEffect, useState } from "react";
 import { useLeaseStore } from "@/store/leaseStore";
 import { useRouter } from "next/navigation";
-import PDFCSVViewer from "@/components/PDFViewer";
+import EnhancedPDFCSVViewer from "@/components/PDFViewer";
 
 
 export default function LeasePage() {
@@ -72,7 +72,7 @@ export default function LeasePage() {
               </button>
             </div>
             <div className="p-4 h-[calc(100%-4rem)] overflow-auto">
-              <PDFCSVViewer 
+              <EnhancedPDFCSVViewer 
                 fileUrl={pdfUrl}
                 pageNumber={currentPdfPage}
                 highlightText={highlightText}
