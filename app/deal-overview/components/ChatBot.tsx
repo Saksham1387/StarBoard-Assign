@@ -25,7 +25,7 @@ export const ChatBot = ({ projectId }: ChatBotProps) => {
     setIsTyping(true);
 
     try {
-      const response = await fetch('http://43.205.239.14:8000/chat', {
+      const response = await fetch('http://13.233.158.171:8000/chat', {
         method: 'POST',
         headers: {
           'Content-Type': 'application/json',
