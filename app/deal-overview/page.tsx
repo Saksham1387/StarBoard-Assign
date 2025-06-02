@@ -140,7 +140,17 @@ export default function DealOverviewPage() {
           console.log("Response:", res.data);
 
           setLeaseData(res.data.data.tenantData);
-          setMultipleFileData(uploadedFileData);
+          
+          // Add PDF URL to the file data array
+          const fileDataWithPdf = [
+            ...uploadedFileData,
+            {
+              fileName: "pdf",
+              fileUrl: pdfFileData?.fileUrl || ""
+            }
+          ];
+          
+          setMultipleFileData(fileDataWithPdf);
           
           const dealData1 = {
             ...res.data.data.leaseData,

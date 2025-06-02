@@ -1,4 +1,5 @@
 "use client";
+import { useFileStore } from "@/store/fielStore";
 import { useCallback, useRef, useState, useEffect } from "react";
 import { Document, Page } from "react-pdf";
 import { pdfjs } from "react-pdf";
@@ -31,7 +32,6 @@ interface HighlightMatch {
 }
 
 export function PDFViewerExample({fileUrl, pageNumber, highlightText}: PDFViewerExampleProps) {
-  console.log(pageNumber, highlightText);
   const [numPages, setNumPages] = useState<number>(0);
   const highlightColor = "#ff0";
   const pageRef = useRef<HTMLDivElement>(null);
