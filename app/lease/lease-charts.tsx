@@ -36,6 +36,7 @@ import {
   ChartLegend,
 } from "@/components/ui/chart";
 import { useLeaseStore } from "@/store/leaseStore";
+import { SourceLink } from "../deal-overview/components/SourceLink";
 
 type RecoveryType = "CAM" | "Taxes" | "Insurance";
 
@@ -46,7 +47,13 @@ const RECOVERY_COLORS: Record<RecoveryType, string> = {
 };
 
 interface LeaseChartsProps {
-  onViewPDF: (pageNumber: number, title: string, startPosition?: number, endPosition?: number, sourceText?: string) => void;
+  onViewPDF: (
+    pageNumber: number,
+    title: string,
+    startPosition?: number,
+    endPosition?: number,
+    sourceText?: string
+  ) => void;
 }
 
 export default function LeaseCharts({ onViewPDF }: LeaseChartsProps) {
@@ -287,6 +294,7 @@ export default function LeaseCharts({ onViewPDF }: LeaseChartsProps) {
                   <th className="border px-4 py-2 text-left">Annual Rent</th>
                   <th className="border px-4 py-2 text-left">Monthly Rent</th>
                   <th className="border px-4 py-2 text-left">Escalation</th>
+                  <th className="border px-4 py-2 text-left">Source</th>
                 </tr>
               </thead>
               <tbody>
@@ -296,9 +304,7 @@ export default function LeaseCharts({ onViewPDF }: LeaseChartsProps) {
                     className={index % 2 === 0 ? "bg-white" : "bg-gray-50"}
                   >
                     <td className="border px-4 py-2">{item.year}</td>
-                    <td className="border px-4 py-2">
-                      ${item.rentPSF}
-                    </td>
+                    <td className="border px-4 py-2">${item.rentPSF}</td>
                     <td className="border px-4 py-2">
                       ${item.annualRent.toLocaleString()}
                     </td>
@@ -317,6 +323,14 @@ export default function LeaseCharts({ onViewPDF }: LeaseChartsProps) {
                             100
                           ).toFixed(1)}%`
                         : "-"}
+                    </td>
+
+                    <td>
+                      <SourceLink
+                        source={item.source}
+                        label="Deal Overview"
+                        onViewPDF={onViewPDF}
+                      />
                     </td>
                   </tr>
                 ))}

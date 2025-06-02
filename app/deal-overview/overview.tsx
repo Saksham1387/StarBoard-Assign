@@ -2,13 +2,14 @@
 import { useState } from "react";
 import { useDealOverviewStore } from "@/store/dealStrore";
 import DealOverviewSkeleton from "./skeleton";
-import { PDFViewerExample } from "../../components/PDFViewer";
+
 import { PropertyHeader } from "./components/PropertyHeader";
 import { DealSummary } from "./components/DealSummary";
 import { PersonalizedInsights } from "./components/PersonalizedInsights";
 import { AnalyticsSection } from "./components/AnalyticsSection";
 import { AssetLevelData } from "./components/AssetLevelData";
 import { ChatBot } from "./components/ChatBot";
+import PDFCSVViewer from "@/components/PDFViewer";
 
 export interface Source {
   page_no: number;
@@ -59,6 +60,7 @@ export default function DealOverview() {
   const [currentEndPosition, setCurrentEndPosition] = useState<number>();
   const [highlightText, setHighlightText] = useState<string>("");
 
+  console.log("Deal Data:", dealData);
   const pdfUrl = "https://assignment-starbaord.s3.ap-south-1.amazonaws.com/uploads/15158e48-3fc7-4020-b30e-64b0f98cb8e5-280+Richards+-+OM.pdf";
 
   // console.log("Deal Data:", dealData);
@@ -95,7 +97,7 @@ export default function DealOverview() {
               </button>
             </div>
             <div className="p-4 h-[calc(100%-4rem)] overflow-auto">
-              <PDFViewerExample 
+              <PDFCSVViewer 
                 fileUrl={pdfUrl}
                 pageNumber={currentPdfPage}
                 highlightText={highlightText}
